@@ -41,11 +41,11 @@ public class ExecuteCurr implements EWrapper
 	
 	int order_id = 51200;
 	int outstanding_mkt_orders = 0;
-	int mkt_order_id = -327;
-	int stp_order_id_aud = -11212;
-	int lmt_order_id_aud = -7438743;
-	int stp_order_id_eur = -11212;
-	int lmt_order_id_eur = -7438743;
+	int mkt_order_id = -1;
+	int stp_order_id_aud = -1;
+	int lmt_order_id_aud = -1;
+	int stp_order_id_eur = -;
+	int lmt_order_id_eur = -1;
 	
 	double observed_low = Double.MAX_VALUE;
 	
@@ -63,7 +63,7 @@ public class ExecuteCurr implements EWrapper
 	
 	int desired_short = 0;
 	
-	int filled_stp_lmt_order_id = -89;
+	int filled_stp_lmt_order_id = -1;
 	double mkt_fill_price = 0.0;
 	BufferedWriter bw = null;
 	SimpleDateFormat sdf = new SimpleDateFormat("HH:mm:ss");
@@ -539,227 +539,6 @@ public class ExecuteCurr implements EWrapper
 	public void Disconnect ()
 	{
 		m_client.eDisconnect();
-	}
-	
-	public void Process2 ()
-	{
-		/*double[] prev_opens = {60.74,57.49,62.11,61.16,62.99,63.09};
-		double avg_open = 0.0;
-		
-		for (int i = 0; i < prev_opens.length; i++)
-			avg_open += prev_opens[i];
-		
-		avg_open /= 6.0;
-		
-		int cur_long = 1170;
-		int desired_short = 1800;
-		double open_price = 0.0;
-		
-		double cash_out = .9805;
-		
-		
-		double high_gain = .9805;
-		double high_hit_one_cutoff = .9925;
-		double high_get_out_early = 1.0070;
-		double high_loss = 1.017;
-		
-		double low_gain = .9925;
-		double low_hit_one_cutoff = .995;
-		double low_get_out_early = 1.0045;
-		double low_loss = 1.0120;
-		
-		double used_gain = 0.0;
-		double used_loss = 0.0;
-		double used_hit_one_cutoff = 0.0;
-		double used_get_out_early = 0.0;		
-		
-		try
-		{
-			Connect ();
-			boolean tripped_hit_one_cutoff = false;
-
-        	bw = new BufferedWriter (new FileWriter ("/home/ubuntu/log_svxy.csv"));
-        	bw.write("time,category,action");
-        	bw.newLine();
-
-        	while (1 == 1)
-        	{
-	    		Thread.sleep(30000);
-	    		
-	    		String[] time = sdf.format(Calendar.getInstance().getTime()).split(":");
-	    		
-	    		if (Integer.parseInt(time[0]) >= 8 && Integer.parseInt(time[1]) >= 10)
-	    			break;
-        	}
-        	
-	        c.m_conId = 0;
-	        c.m_symbol = "SVXY";
-	        c.m_secType = "STK";
-	        c.m_strike = 0.0;
-	        c.m_exchange = "SMART";
-	        c.m_currency = "USD";
-	        c.m_primaryExch = "ISLAND";
-	        
-	        o.m_clientId = 0;
-	        o.m_permId = 0;
-	        o.m_totalQuantity = cur_long + desired_short;
-	        
-	        order_id++;
-	        
-	        o.m_orderType = "MKT";
-	        o.m_action = "SELL";
-	        o.m_orderId = order_id;
-	        o.m_tif = "OPG";
-	        mkt_order_id = order_id;
-	        outstanding_mkt_orders = 1;
-	        m_client.placeOrder(order_id, c, o);
-	        order_id++;
-
-	        file_sem.acquire();
-        	bw.write(sdf.format(Calendar.getInstance().getTime()) + " submitted opg order " + Integer.toString(o.m_totalQuantity));
-        	bw.newLine();
-        	System.out.println(sdf.format(Calendar.getInstance().getTime()) + " submitted opg order " + Integer.toString(o.m_totalQuantity));
-        	file_sem.release();
-	        
-        	System.out.println ("before acquire");
-	        mkt_filled_sem.acquire();
-	        System.out.println ("after acquire");
-	        
-	        open_price = mkt_fill_price;
-	        
-	        System.out.println (mkt_fill_price);
-        	
-        	//open_price = 136.3;
-	        
-	        if (open_price > avg_open)
-	        {
-	    		used_gain = low_gain;
-	    		used_loss = low_loss;
-	    		used_hit_one_cutoff = low_hit_one_cutoff;
-	    		used_get_out_early = low_get_out_early;    	
-	        }
-	        else
-	        {
-	    		used_gain = high_gain;
-	    		used_loss = high_loss;
-	    		used_hit_one_cutoff = high_hit_one_cutoff;
-	    		used_get_out_early = high_get_out_early;    	        	
-	        }
-	        
-	        System.out.println ("before acquire");
-        	stp_lmt_order_stats_sem.acquire();
-        	System.out.println ("after acquire");
-        	
-	        o.m_orderType = "STP";
-	        o.m_auxPrice = Double.parseDouble(df.format(open_price*used_loss));
-	        o.m_orderId = order_id;
-	        stp_order_id = order_id;
-	        o.m_action = "BUY";
-	        o.m_tif = "DAY";
-	        o.m_totalQuantity = desired_short * 2;
-	        m_client.placeOrder(order_id, c, o);
-	        order_id++;
-	        
-	        file_sem.acquire();
-        	bw.write(sdf.format(Calendar.getInstance().getTime()) + " submitted loss stop " + Double.toString(o.m_auxPrice));
-        	bw.newLine();
-        	System.out.println(sdf.format(Calendar.getInstance().getTime()) + " submitted loss stop " + Double.toString(o.m_auxPrice));
-        	file_sem.release();
-	        
-	        o.m_orderType = "LMT";
-	        o.m_lmtPrice = Double.parseDouble(df.format(open_price*used_gain));
-	        o.m_orderId = order_id;
-	        lmt_order_id = order_id;
-	        o.m_action = "BUY";
-	        o.m_tif = "DAY";
-	        o.m_totalQuantity = (desired_short * 2);
-	        m_client.placeOrder(order_id, c, o);
-	        order_id++;
-	        
-	        file_sem.acquire();
-        	bw.write(sdf.format(Calendar.getInstance().getTime()) + " submitted gain limit " + Double.toString(o.m_lmtPrice));
-        	System.out.println(sdf.format(Calendar.getInstance().getTime()) + " submitted gain limit " + Double.toString(o.m_lmtPrice));
-        	bw.newLine();
-        	file_sem.release();
-	        
-	        m_client.reqRealTimeBars(order_id, c, 5, "TRADES", false);
-	        order_id++;
-	        
-	        stp_lmt_order_stats_sem.release();
-	        
-	        while (1 == 1)
-	        {
-	        	Thread.sleep (30000);
-	        	
-				stp_lmt_order_stats_sem.acquire();
-				if (state == SECOND_TRADES)
-				{
-					if (filled_stp_lmt_order_id == stp_order_id)
-					{
-						m_client.cancelOrder(lmt_order_id);
-						
-						if (tripped_hit_one_cutoff)
-							o.m_auxPrice = Double.parseDouble(df.format(open_price*used_get_out_early * cash_out));
-						else
-							o.m_auxPrice = Double.parseDouble(df.format(open_price * used_loss * cash_out));
-						
-						o.m_totalQuantity = desired_short;
-						
-						//in_stop_case = true;
-					}
-					else if (filled_stp_lmt_order_id == lmt_order_id)
-					{
-						m_client.cancelOrder(stp_order_id);
-						o.m_auxPrice = Double.parseDouble(df.format(open_price*used_gain * cash_out));
-						
-						o.m_totalQuantity = desired_short + 100;
-					}
-					
-			        o.m_orderType = "STP";
-			        o.m_orderId = order_id;
-			        stp_order_id = order_id;
-			        o.m_action = "SELL";
-			        o.m_tif = "DAY";			    
-			        m_client.placeOrder(order_id, c, o);
-			        order_id++;
-			        
-			        file_sem.acquire();
-		        	bw.write(sdf.format(Calendar.getInstance().getTime()) + " set final stop at " + Double.toString(o.m_auxPrice));
-		        	System.out.println(sdf.format(Calendar.getInstance().getTime()) + " set final stop at " + Double.toString(o.m_auxPrice));
-		        	bw.newLine();
-		        	file_sem.release();
-		        	
-			        bw.close();
-			        break;
-				}
-				else if (!tripped_hit_one_cutoff && observed_low < used_hit_one_cutoff * open_price)
-				{
-					m_client.cancelOrder(stp_order_id);
-					
-			        o.m_orderType = "STP";
-			        o.m_auxPrice = Double.parseDouble(df.format(open_price*used_get_out_early));
-			        o.m_orderId = order_id;
-			        stp_order_id = order_id;
-			        o.m_action = "BUY";
-			        o.m_tif = "DAY";
-			        o.m_totalQuantity = desired_short * 2;
-			        m_client.placeOrder(order_id, c, o);
-			        order_id++;
-			        
-			        file_sem.acquire();
-		        	bw.write(sdf.format(Calendar.getInstance().getTime()) + " set get out early stop at " + Double.toString(o.m_auxPrice));
-		        	System.out.println(sdf.format(Calendar.getInstance().getTime()) + " set get out early stop at " + Double.toString(o.m_auxPrice));
-		        	bw.newLine();
-		        	file_sem.release();
-			        
-			        tripped_hit_one_cutoff = true;
-				}
-				stp_lmt_order_stats_sem.release();
-	        }
-	        
-	        Disconnect();
-		}
-		catch (Exception e){e.printStackTrace();}*/
 	}
 	
 	public void Process ()
